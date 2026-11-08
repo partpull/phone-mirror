@@ -16,6 +16,7 @@
   "build": {
     "appId": "com.phonemirror.app",
     "productName": "手机投屏v1.0.0 By CAIJIAXING",
+    "artifactName": "PhoneMirror-${version}-Setup.${ext}",
     "directories": {
       "output": "dist"
     },
