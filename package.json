@@ -1,0 +1,51 @@
+{
+  "name": "phone-mirror",
+  "version": "1.0.0",
+  "description": "手机投屏 - 安卓手机实时投屏与鼠标控制（基于 scrcpy）",
+  "main": "main.js",
+  "author": "CAIJIAXING",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --publish never"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.phonemirror.app",
+    "productName": "手机投屏v1.0.0 By CAIJIAXING",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**"
+    ],
+    "extraResources": [
+      {
+        "from": "vendor/scrcpy",
+        "to": "scrcpy"
+      },
+      {
+        "from": "vendor/tools",
+        "to": "tools",
+        "filter": [
+          "CloseWindow.exe"
+        ]
+      }
+    ]
+  }
+}

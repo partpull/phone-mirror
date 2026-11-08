@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+  <title>手机投屏</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6.5" y="2.5" width="11" height="19" rx="2.6"></rect>
+            <path d="M10.5 18.5h3"></path>
+          </svg>
+        </span>
+        <div class="brand-text">
+          <h1>手机投屏</h1>
+          <span class="version" id="versionChip">v1.0.0</span>
+        </div>
+        <span class="subtitle">实时镜像 · 鼠标触控 · 基于 scrcpy</span>
+      </div>
+      <span class="engine-chip" id="engineChip">
+        <span class="dot"></span>
+        <span id="engineText">正在检测内核…</span>
+      </span>
+    </header>
+
+    <div class="workspace">
+      <aside class="sidebar">
+        <section class="card devices-card">
+          <div class="card-head">
+            <h2>设备</h2>
+            <div class="head-actions">
+              <span class="count" id="deviceCount">0</span>
+              <button class="icon-btn" id="refreshBtn" title="刷新设备列表">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+                  <path d="M21 3v6h-6"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="device-list" id="deviceList"></div>
+          <div class="empty" id="deviceEmpty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="7" y="2.5" width="10" height="19" rx="2.4"></rect>
+              <path d="M10.5 18.5h3"></path>
+            </svg>
+            <p>未检测到设备</p>
+            <span>用支持数据传输的 USB 线连接手机，<br>并在手机上允许 USB 调试。</span>
+          </div>
+        </section>
+
+        <section class="card wireless-card">
+          <div class="card-head">
+            <h2>无线连接</h2>
+            <span class="muted">Android 11+</span>
+          </div>
+          <label class="field-label" for="wifiIp">手机 IP 地址</label>
+          <div class="row">
+            <input id="wifiIp" class="input" placeholder="192.168.1.20" autocomplete="off">
+            <input id="wifiPort" class="input port" value="5555" aria-label="端口" autocomplete="off">
+          </div>
+          <button class="btn ghost block" id="connectWifiBtn">连接</button>
+          <button class="btn ghost block" id="usbToWifiBtn" disabled>USB 一键转无线</button>
+          <details class="pair-box">
+            <summary>首次配对（无线调试配对码）</summary>
+            <p class="pair-tip">手机：开发者选项 → 无线调试 → 使用配对码配对设备</p>
+            <div class="row">
+              <input id="pairPort" class="input port" placeholder="配对端口" autocomplete="off">
+              <input id="pairCode" class="input port" placeholder="6 位配对码" autocomplete="off">
+            </div>
+            <button class="btn ghost block" id="pairBtn">配对</button>
+          </details>
+        </section>
+
+        <section class="card notes-card">
+          <div class="card-head">
+            <h2>机型说明</h2>
+            <span class="muted">使用前请确认</span>
+          </div>
+          <ul class="notes">
+            <li><b>小米</b>：需开启「USB 调试（安全设置）」并重启手机，否则只能看画面、不能点击。</li>
+            <li><b>一加 / OPPO</b>：点击无反应时，在开发者选项关闭「权限监控」（旧版显示「禁止权限监控」）。</li>
+            <li><b>驱动</b>：列表为空时安装厂商 USB 驱动；USB 模式选「传输文件」。</li>
+            <li><b>无线</b>：手机与电脑需在同一 Wi-Fi；首次用「无线调试」配对码配对，之后用 IP 直连。</li>
+            <li><b>多设备</b>：当前一次投屏一台，停止后可切换到其他手机。</li>
+          </ul>
+        </section>
+      </aside>
+
+      <main class="content">
+        <section class="card selected-card">
+          <div class="selected-info">
+            <span class="device-avatar" id="selectedAvatar" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="7" y="2.5" width="10" height="19" rx="2.4"></rect>
+                <path d="M10.5 18.5h3"></path>
+              </svg>
+            </span>
+            <div class="selected-text">
+              <div class="selected-name" id="selectedName">未选择设备</div>
+              <div class="selected-meta" id="selectedMeta">从左侧列表选择一台设备后开始投屏</div>
+            </div>
+            <span class="mirror-badge hidden" id="mirrorBadge">投屏中</span>
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="startBtn" disabled>开始投屏</button>
+            <button class="btn danger" id="stopBtn" disabled>停止投屏</button>
+          </div>
+        </section>
+
+        <section class="card settings-card">
+          <div class="card-head">
+            <h2>投屏参数</h2>
+            <span class="muted">修改后下次启动生效</span>
+          </div>
+          <div class="setting-grid">
+            <label class="field">
+              <span>分辨率上限</span>
+              <select id="maxSize" class="input">
+                <option value="native">原生分辨率</option>
+                <option value="1920">1920 × 1080</option>
+                <option value="1280">1280 × 720</option>
+                <option value="1024">1024 × 576</option>
+                <option value="800">800 × 450</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>视频码率</span>
+              <select id="bitrate" class="input">
+                <option value="4M">4 Mbps</option>
+                <option value="8M">8 Mbps</option>
+                <option value="16M">16 Mbps</option>
+                <option value="24M">24 Mbps</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>帧率上限</span>
+              <select id="maxFps" class="input">
+                <option value="auto">自动</option>
+                <option value="30">30 fps</option>
+                <option value="60">60 fps</option>
+                <option value="90">90 fps</option>
+                <option value="120">120 fps</option>
+              </select>
+            </label>
+          </div>
+          <div class="switch-grid">
+            <label class="switch">
+              <input type="checkbox" id="audio">
+              <span class="track"></span>
+              <span class="switch-text">转发手机声音</span>
+            </label>
+            <label class="switch">
+              <input type="checkbox" id="stayAwake">
+              <span class="track"></span>
+              <span class="switch-text">保持手机常亮</span>
+            </label>
+            <label class="switch">
+              <input type="checkbox" id="turnScreenOff">
+              <span class="track"></span>
+              <span class="switch-text">投屏时关闭手机屏幕</span>
+            </label>
+            <label class="switch">
+              <input type="checkbox" id="alwaysOnTop">
+              <span class="track"></span>
+              <span class="switch-text">投屏窗口置顶</span>
+            </label>
+            <label class="switch">
+              <input type="checkbox" id="fullscreen">
+              <span class="track"></span>
+              <span class="switch-text">全屏启动</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="card tips-card">
+          <div class="tips-head">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"></circle>
+              <path d="M12 10.5v5"></path>
+              <path d="M12 7.5h.01"></path>
+            </svg>
+            <span>操作提示</span>
+          </div>
+          <ul class="tips">
+            <li><b>左键点击 / 拖动</b>即手机上的点击与滑动，滚轮对应上下滑动。</li>
+            <li><b>右键</b>返回，<b>中键</b>回到桌面，键盘可直接输入文字。</li>
+          </ul>
+        </section>
+
+        <section class="card log-card">
+          <div class="card-head">
+            <h2>运行日志</h2>
+            <button class="text-btn" id="clearLogBtn">清空</button>
+          </div>
+          <div class="hint hidden" id="hintBox">
+            <span class="hint-text" id="hintText"></span>
+            <button class="hint-close" id="hintCloseBtn" title="关闭提示" aria-label="关闭提示">×</button>
+          </div>
+          <pre class="log" id="logBox"></pre>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
